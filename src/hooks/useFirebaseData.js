@@ -3,30 +3,27 @@ import { ref, onValue } from 'firebase/database';
 import { database } from '../firebase/firebase';
 
 export default function useFirebaseData(path = 'sensors') {
-  // Default state jab tak Firebase se data nahi aata
   const [data, setData] = useState({
     temperature: '--',
     humidity: '--',
     ldr: '--',
     posture: 'Waiting...'
   });
+  const [lastUpdated, setLastUpdated] = useState(null); // Naya state time track karne ke liye
 
   useEffect(() => {
-    // Firebase database mein 'sensors' path ka reference
     const dataRef = ref(database, path);
 
-    // onValue ek listener hai jo real-time changes pakadta hai
     const unsubscribe = onValue(dataRef, (snapshot) => {
       if (snapshot.exists()) {
-        setData(snapshot.val()); // ESP32 jo data bhejega wo yahan set ho jayega
-      } else {
-        console.log("No data available at this path yet");
+        setData(snapshot.val());
+        setLastUpdated(new Date()); // Jaise hi data aaye, time update kar do
       }
     });
 
-    // Cleanup function (Best practice: jab component hatega toh listener band ho jayega)
     return () => unsubscribe();
   }, [path]);
 
-  return data; // Yeh hook live data return karega
+  // Ab hum data aur time dono return kar rahe hain
+  return { data, lastUpdated }; 
 }
